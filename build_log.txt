@@ -1,0 +1,21 @@
+mkdir .devcontainer
+touch build_log.txt
+touch .devcontainer/Dockerfile
+touch .devcontainer/devcontainer.json
+Dockerfile schreiben
+devcontainer.json schreiben
+mkdir -p snomedct_releases
+curl -L -o snomedct_releases/SnomedCT_GermanRF2.zip "<dein Download-Link>"
+manuell ct-zip-Datei von snomed herunterladen und dann in snomedct_releases hochladen
+touch .gitignore
+snomedct_releases zu .gitignore hinzugefügt
+docker compose --profile init up snomed-import
+docker compose up -d
+sudo du -sh /var/lib/docker/volumes/piskklis_elastic/_data
+docker compose logs snowstorm
+docker network inspect piskklis_default
+cat /etc/hosts
+curl http://snowstorm:8080/actuator/health
+curl http://elasticsearch:9200/
+http://snowstorm:8080/fhir
+curl --location -g http://snowstorm:8080/fhir/CodeSystem/$lookup?system=http://snomed.info/sct&code=73211009

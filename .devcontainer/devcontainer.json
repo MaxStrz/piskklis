@@ -1,0 +1,25 @@
+{
+  "name": "piskklis",
+
+  "dockerComposeFile": "docker-compose.yml",
+
+  "service": "devcontainer",
+
+  "workspaceFolder": "/workspace",
+
+  "forwardPorts": [8888, 8080, 9200, 80],
+
+  "postCreateCommand": "git config --global --add safe.directory /workspaces/piskklis && pip install -r requirements.txt && echo '# Ready to go! ✅'",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}
