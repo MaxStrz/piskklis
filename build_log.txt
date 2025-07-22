@@ -19,3 +19,7 @@ curl http://snowstorm:8080/actuator/health
 curl http://elasticsearch:9200/
 http://snowstorm:8080/fhir
 curl --location -g http://snowstorm:8080/fhir/CodeSystem/$lookup?system=http://snomed.info/sct&code=73211009
+curl -g "http://snowstorm:8080/codesystems"
+ls -lh ./snomedct_releases
+curl -s "http://elasticsearch:9200/_cat/indices?v"
+curl -X DELETE "http://elasticsearch:9200/refset"

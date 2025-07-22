@@ -1,3 +1,6 @@
+# letzte stabile Version des Docker-Compose-Dateiformats der „v2-Reihe“
+version: "2.4"
+
 ###############################################################################
 # Docker Compose – Multi-Container-Entwicklungsumgebung
 #
@@ -48,13 +51,14 @@ services:
   #   Container-Rebuild erhalten.
   ###########################################################################
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
     environment:
       - discovery.type=single-node         # Single-Node-Modus, kein Cluster-Bootstrap nötig
       - xpack.security.enabled=false       # Sicherheit deaktiviert (nur für Entwicklung!)
       - "ES_JAVA_OPTS=-Xms4g -Xmx4g"       # Fester Java-Heap, hier 4 GB
     volumes:
       - elastic:/usr/share/elasticsearch/data  # Persistente Speicherung der ES-Daten
+
     healthcheck:
       # Healthcheck prüft regelmäßig, ob Elasticsearch voll funktionsfähig ist.
       # Das ist wichtig, damit nachfolgende Container (wie z.B. Importer oder Snowstorm)
@@ -67,7 +71,11 @@ services:
       #     Mit 'wait_for_status=green' wartet Elasticsearch kurz, ob der Status noch wechselt.
       #   - '|| exit 1' bedeutet: Falls curl fehlschlägt (also Status ≠ green oder Fehler), wird mit Fehlercode 1 abgebrochen.
       #   - Docker Compose markiert den Service dann als 'unhealthy' und startet abhängige Container noch nicht.
-      test: curl -f http://localhost:9200/_cluster/health?wait_for_status=green || exit 1
+      test: |
+        sh -c '
+          echo "🔍 Prüfe Elasticsearch-Status…";
+          curl -f http://localhost:9200/_cluster/health?wait_for_status=green || exit 1
+        '
       interval: 30s    # Alle 30 Sekunden wird der Healthcheck erneut versucht.
       timeout: 10s     # Nach 10 Sekunden bricht jeder einzelne Versuch ab.
       retries: 120      # Es werden maximal 120 Versuche gemacht (also bis zu 60 Minuten).
@@ -84,66 +92,85 @@ services:
   # Aufruf:    docker compose --profile init up snomed-import
   #            (wird dank des Profils „init“ NICHT beim normalen ›up -d‹ gestartet)
   ###############################################################################
-  snomed-import:
-    # -------------------------------------------------------------------------
-    # Verwendet dasselbe offizielle Snowstorm-Image wie der API-Server
-    # (liefert die Import-Funktion „out of the box“).
-    # -------------------------------------------------------------------------
-    image: snomedinternational/snowstorm:latest
+  # snomed-import:
+  #   # -------------------------------------------------------------------------
+  #   # Verwendet dasselbe offizielle Snowstorm-Image wie der API-Server
+  #   # (liefert die Import-Funktion „out of the box“).
+  #   # -------------------------------------------------------------------------
+  #   image: snomedinternational/snowstorm:latest
+  #   restart: "no" # Docker startet den Container nach Exit nicht neu
 
-    # -------------------------------------------------------------------------
-    # Profile „init“ sorgt dafür, dass der Service nur läuft,
-    # wenn das Profil explizit aktiviert wird (›--profile init‹).
-    # -------------------------------------------------------------------------
-    profiles: ["init"]
+  #   # -------------------------------------------------------------------------
+  #   # Volume-Mounts
+  #   #   1) ./snomedct_releases  – Host-Ordner mit RF2-ZIPs → /import (read-only)
+  #   #   2) elastic              – Gemeinsames ES-Datavolume,
+  #   #                              damit Importer und API dieselben Indizes sehen.
+  #   # -------------------------------------------------------------------------
+  #   volumes:
+  #     - ./snomedct_releases:/import:ro      # RF2-ZIPs, unveränderbar
+  #     - elastic:/usr/share/elasticsearch/data  # persistente Index-Daten
 
-    # -------------------------------------------------------------------------
-    # Volume-Mounts
-    #   1) ./snomedct_releases  – Host-Ordner mit RF2-ZIPs → /import (read-only)
-    #   2) elastic              – Gemeinsames ES-Datavolume,
-    #                              damit Importer und API dieselben Indizes sehen.
-    # -------------------------------------------------------------------------
-    volumes:
-      - ./snomedct_releases:/import:ro      # RF2-ZIPs, unveränderbar
-      - elastic:/usr/share/elasticsearch/data  # persistente Index-Daten
+  #   # Der komplette Importprozess als Shell-Skript:
+  #   # 1. Prüft, ob genau eine ZIP-Datei existiert
+  #   # 2. Führt den Java-Import mit allen nötigen JVM-Flags aus
+  #   # 3. Beendet sich nach dem Import
+  #   entrypoint: |
+  #     sh -c '
 
-    # Der komplette Importprozess als Shell-Skript:
-    # 1. Prüft, ob genau eine ZIP-Datei existiert
-    # 2. Führt den Java-Import mit allen nötigen JVM-Flags aus
-    # 3. Beendet sich nach dem Import
-    entrypoint: |
-      sh -c '
-        # -------------------------------
-        # 1) Prüfen, ob die Datei existiert
-        # -------------------------------
-        ZIP="/import/SnomedCT_Germany-EditionRelease_PRODUCTION_20250515T120000Z.zip"
-        [ -f "$$ZIP" ] || { echo "❌ Datei $$ZIP nicht gefunden"; exit 1; }
+  #       echo "📁 Inhalt von /import:"
+  #       ls -lh /import
 
-        echo "✔ Importiere $$ZIP"
+  #       # -------------------------------
+  #       # 1) Prüfen, ob die Datei existiert
+  #       # -------------------------------
+  #       ZIP="/import/SnomedCT_Germany-EditionRelease_PRODUCTION_20250515T120000Z.zip"
+  #       [ -f "$$ZIP" ] || { echo "❌ Datei $$ZIP nicht gefunden"; exit 1; }
+        
+  #       echo "✅ ZIP gefunden: $$ZIP"
 
-        # -------------------------------
-        # 2) Snowstorm-CLI aufrufen
-        # -------------------------------
-        java -Xms2g -Xmx4g \
-          --add-opens java.base/java.lang=ALL-UNNAMED \
-          --add-opens java.base/java.util=ALL-UNNAMED \
-          -cp @/app/jib-classpath-file \
-          org.snomed.snowstorm.SnowstormApplication \
-          --elasticsearch.urls=http://elasticsearch:9200 \
-          --delete-indices \
-          --import="$$ZIP" \
-          --exit
-      '
+  #       echo "🟢 Elasticsearch-Status:"
+  #       curl http://elasticsearch:9200/_cluster/health?pretty
 
-    # -------------------------------------------------------------------------
-    # Wartebedingung:
-    #   Import startet erst, wenn Elasticsearch laut Health-Check „healthy“ ist,
-    #   damit die Indizes angelegt werden können.
-    # -------------------------------------------------------------------------
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
+  #       # Skip-Logik: existiert bereits ein Referenz-Index?
+  #       # ---------------------------------------------------
+  #       # Dieser Check entscheidet, ob der Import überhaupt nötig ist.
+  #       # Dazu fragen wir Elasticsearch über die "_cat/indices"-API im JSON-Format ab.
+  #       # Die Antwort enthält alle vorhandenen Indizes.
+  #       # Wir suchen gezielt nach dem Index "refset", den Snowstorm beim SNOMED-Import erzeugt.
+  #       # Wenn dieser Index existiert, gehen wir davon aus, dass der komplette Import
+  #       # bereits durchgeführt wurde.
 
+  #       if curl -s http://elasticsearch:9200/_cat/indices?format=json | grep -q "\"index\":\"refset\""; then
+  #         # Falls der Index "refset" gefunden wurde, wird der Import übersprungen:
+  #         # Statt den Import erneut durchzuführen (was viel Zeit kostet), geben wir eine Erfolgsmeldung aus
+  #         # und beenden das Skript sofort mit Exit-Code 0 → Docker Compose interpretiert das als „fertig“.
+  #         echo "✅ SNOMED-Indizes existieren – Import übersprungen"
+  #         exit 0
+  #       fi
+
+  #       echo "🚀 Starte SNOMED-Import..."
+  #       # -------------------------------
+  #       # 2) Snowstorm-CLI aufrufen
+  #       # -------------------------------
+  #       java -Xms4g -Xmx8g \
+  #         --add-opens java.base/java.lang=ALL-UNNAMED \
+  #         --add-opens java.base/java.util=ALL-UNNAMED \
+  #         -cp @/app/jib-classpath-file \
+  #         org.snomed.snowstorm.SnowstormApplication \
+  #         --elasticsearch.urls=http://elasticsearch:9200 \
+  #         --delete-indices \
+  #         --import="$$ZIP" \
+  #         --exit
+  #     '
+
+  #   # -------------------------------------------------------------------------
+  #   # Wartebedingung:
+  #   #   Import startet erst, wenn Elasticsearch laut Health-Check „healthy“ ist,
+  #   #   damit die Indizes angelegt werden können.
+  #   # -------------------------------------------------------------------------
+  #   depends_on:
+  #     elasticsearch:
+  #       condition: service_healthy
 
   ###############################################################################
   # 4) snowstorm – Laufender Terminologie-Server (REST API für SNOMED CT)
@@ -165,6 +192,12 @@ services:
     #                                → Hauptklasse, die Snowstorm startet
     # --elasticsearch.urls=...       → Adresse des Elasticsearch-Service (per Compose vernetzt)
     # -------------------------------------------------------------------------
+
+    # → Hier das ZIP aus dem Codespace mounten:
+    volumes:
+    # Eine Ebene nach oben ins Projektverzeichnis, dann in snomedct_releases:
+    - ../snomedct_releases/SnomedCT_Germany-EditionRelease_PRODUCTION_20250515T120000Z.zip:/data/SnomedCT.zip:ro
+      
     entrypoint: >
       java -Xms2g -Xmx4g
       --add-opens java.base/java.lang=ALL-UNNAMED
@@ -172,6 +205,8 @@ services:
       -cp @/app/jib-classpath-file
       org.snomed.snowstorm.SnowstormApplication
       --elasticsearch.urls=http://elasticsearch:9200
+      --delete-indices
+      --import=/data/SnomedCT.zip
 
     # -------------------------------------------------------------------------
     # depends_on: Wartet, bis Elasticsearch „healthy“ ist
@@ -181,7 +216,9 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-        
+      # snomed-import:
+      #   condition: service_completed_successfully
+
     # Healthcheck für Snowstorm-Container:
     #   • Prüft regelmäßig, ob die REST-API unter /actuator/health erreichbar ist.
     #   • Erst wenn dieser Test erfolgreich ist, gilt der Container als „healthy“.
@@ -193,7 +230,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
 
       # Wie oft wird getestet? Hier alle 5 Sekunden.
-      interval: 5s
+      interval: 30s
 
       # Wie lange darf ein Test maximal dauern, bevor er als fehlgeschlagen gilt?
       timeout: 3s
@@ -201,7 +238,6 @@ services:
       # Nach wie vielen Fehlversuchen wird der Container als „unhealthy“ markiert?
       retries: 24
       # (In diesem Beispiel: 24 × 5 s = 2 Minuten maximale Wartezeit)
-
 
   ###########################################################################
   # 5) browser – Schlanke Web-UI (Port 80) zum Durchstöbern von SNOMED CT
@@ -211,7 +247,15 @@ services:
     environment:
       - API_HOST=http://snowstorm:8080/    # zeigt auf REST-API
     depends_on:
-      - snowstorm
+      snowstorm:
+        condition: service_healthy
+
+  es-logmarker:
+    image: busybox
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    entrypoint: sh -c 'echo "✅ Elasticsearch ist bereit (Healthcheck erfolgreich)"'
 
 ###############################################################################
 # Benannte Docker-Volumes
