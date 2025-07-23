@@ -5,7 +5,7 @@ set -euo pipefail
 #    Konfigurationsbereich
 ############################
 
-# URL Deines Snowstorm-Servers (Container-DNS + Port)
+# URL Deines Snowstorm-Servers
 SNOWSTORM_URL="http://snowstorm:8080"
 
 # Branch, in den importiert werden soll
@@ -15,18 +15,29 @@ BRANCH="MAIN"
 ZIP_PATH="/workspace/snomedct_releases/SnomedCT.zip"
 
 ############################
-#    Import-Logik (versteckt)
+#    Import-Logik Schritt 1
 ############################
 
-: <<'IMPORT_LOGIK'
-# 1) Import-Job anlegen (POST /imports)
-#    → Extrahiere IMPORT_ID
+echo "▶ Erstelle neuen Import-Job..."
+IMPORT_ID=$(
+  curl -s -X POST "${SNOWSTORM_URL}/imports" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "branchPath": "'"${BRANCH}"'",
+          "createCodeSystemVersion": true,
+          "type": "SNAPSHOT"
+        }' \
+  | jq -r '.importId'
+)
 
-# 2) ZIP hochladen (POST /imports/${IMPORT_ID}/archive)
+echo "→ Import-ID ist: ${IMPORT_ID}"
 
-# 3) Status abfragen (GET /imports/${IMPORT_ID})
+############################
+#    Import-Logik Folge­schritte (versteckt)
+############################
 
-# 4) (optional) Polling & Fehlerbehandlung
-IMPORT_LOGIK
-
-echo "Konfiguration gesetzt – starte Schritt 1, wenn Du bereit bist."
+: <<'IMPORT_FOLGE'
+# 2) ZIP hochladen
+# 3) Status abfragen
+# 4) Polling & Fehlerbehandlung
+IMPORT_FOLGE
