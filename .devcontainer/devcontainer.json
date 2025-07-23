@@ -9,7 +9,7 @@
 
   "forwardPorts": [8888, 8080, 9200, 80],
 
-  "postCreateCommand": "apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/* && git config --global --add safe.directory /workspaces/piskklis && pip install -r requirements.txt && echo '# Ready to go! ✅'",
+  "postCreateCommand": "git config --global --add safe.directory /workspaces/piskklis && pip install -r requirements.txt && echo '# Ready to go! ✅'",
 
   "customizations": {
     "vscode": {

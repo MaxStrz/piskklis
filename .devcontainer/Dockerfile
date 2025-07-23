@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
     git curl build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Installiere jq im Build-Step
+RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+
 # Installiert das Python-Paket 'jupyter' im Container:
 # - 'pip install --no-cache-dir jupyter': Installiert das Jupyter Notebook (und alles was dazugehört) ohne Pip-Cache zu speichern (spart Speicherplatz).
 RUN pip install --no-cache-dir jupyter
