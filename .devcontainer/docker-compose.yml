@@ -1,6 +1,3 @@
-# letzte stabile Version des Docker-Compose-Dateiformats der „v2-Reihe“
-version: "2.4"
-
 ###############################################################################
 # Docker Compose – Multi-Container-Entwicklungsumgebung
 #
@@ -80,105 +77,6 @@ services:
       timeout: 10s     # Nach 10 Sekunden bricht jeder einzelne Versuch ab.
       retries: 120      # Es werden maximal 120 Versuche gemacht (also bis zu 60 Minuten).
 
-
-  ###############################################################################
-  # 3) snomed-import – Einmaliger RF2-Snapshot-Importer
-  # --------------------------------------------------------------------------- #
-  # Zweck:     • Lädt die SNOMED-CT-ZIPs aus dem Host-Ordner „snomedct_releases“
-  #            • Entfernt vorhandene SNOMED-Indizes (--delete-indices)
-  #            • Importiert alle *.zip in Elasticsearch (--import)
-  #            • Beendet sich anschließend sofort (--exit)
-  #
-  # Aufruf:    docker compose --profile init up snomed-import
-  #            (wird dank des Profils „init“ NICHT beim normalen ›up -d‹ gestartet)
-  ###############################################################################
-  # snomed-import:
-  #   # -------------------------------------------------------------------------
-  #   # Verwendet dasselbe offizielle Snowstorm-Image wie der API-Server
-  #   # (liefert die Import-Funktion „out of the box“).
-  #   # -------------------------------------------------------------------------
-  #   image: snomedinternational/snowstorm:latest
-  #   restart: "no" # Docker startet den Container nach Exit nicht neu
-
-  #   # -------------------------------------------------------------------------
-  #   # Volume-Mounts
-  #   #   1) ./snomedct_releases  – Host-Ordner mit RF2-ZIPs → /import (read-only)
-  #   #   2) elastic              – Gemeinsames ES-Datavolume,
-  #   #                              damit Importer und API dieselben Indizes sehen.
-  #   # -------------------------------------------------------------------------
-  #   volumes:
-  #     - ./snomedct_releases:/import:ro      # RF2-ZIPs, unveränderbar
-  #     - elastic:/usr/share/elasticsearch/data  # persistente Index-Daten
-
-  #   # Der komplette Importprozess als Shell-Skript:
-  #   # 1. Prüft, ob genau eine ZIP-Datei existiert
-  #   # 2. Führt den Java-Import mit allen nötigen JVM-Flags aus
-  #   # 3. Beendet sich nach dem Import
-  #   entrypoint: |
-  #     sh -c '
-
-  #       echo "📁 Inhalt von /import:"
-  #       ls -lh /import
-
-  #       # -------------------------------
-  #       # 1) Prüfen, ob die Datei existiert
-  #       # -------------------------------
-  #       ZIP="/import/SnomedCT_Germany-EditionRelease_PRODUCTION_20250515T120000Z.zip"
-  #       [ -f "$$ZIP" ] || { echo "❌ Datei $$ZIP nicht gefunden"; exit 1; }
-        
-  #       echo "✅ ZIP gefunden: $$ZIP"
-
-  #       echo "🟢 Elasticsearch-Status:"
-  #       curl http://elasticsearch:9200/_cluster/health?pretty
-
-  #       # Skip-Logik: existiert bereits ein Referenz-Index?
-  #       # ---------------------------------------------------
-  #       # Dieser Check entscheidet, ob der Import überhaupt nötig ist.
-  #       # Dazu fragen wir Elasticsearch über die "_cat/indices"-API im JSON-Format ab.
-  #       # Die Antwort enthält alle vorhandenen Indizes.
-  #       # Wir suchen gezielt nach dem Index "refset", den Snowstorm beim SNOMED-Import erzeugt.
-  #       # Wenn dieser Index existiert, gehen wir davon aus, dass der komplette Import
-  #       # bereits durchgeführt wurde.
-
-  #       if curl -s http://elasticsearch:9200/_cat/indices?format=json | grep -q "\"index\":\"refset\""; then
-  #         # Falls der Index "refset" gefunden wurde, wird der Import übersprungen:
-  #         # Statt den Import erneut durchzuführen (was viel Zeit kostet), geben wir eine Erfolgsmeldung aus
-  #         # und beenden das Skript sofort mit Exit-Code 0 → Docker Compose interpretiert das als „fertig“.
-  #         echo "✅ SNOMED-Indizes existieren – Import übersprungen"
-  #         exit 0
-  #       fi
-
-  #       echo "🚀 Starte SNOMED-Import..."
-  #       # -------------------------------
-  #       # 2) Snowstorm-CLI aufrufen
-  #       # -------------------------------
-  #       java -Xms4g -Xmx8g \
-  #         --add-opens java.base/java.lang=ALL-UNNAMED \
-  #         --add-opens java.base/java.util=ALL-UNNAMED \
-  #         -cp @/app/jib-classpath-file \
-  #         org.snomed.snowstorm.SnowstormApplication \
-  #         --elasticsearch.urls=http://elasticsearch:9200 \
-  #         --delete-indices \
-  #         --import="$$ZIP" \
-  #         --exit
-  #     '
-
-  #   # -------------------------------------------------------------------------
-  #   # Wartebedingung:
-  #   #   Import startet erst, wenn Elasticsearch laut Health-Check „healthy“ ist,
-  #   #   damit die Indizes angelegt werden können.
-  #   # -------------------------------------------------------------------------
-  #   depends_on:
-  #     elasticsearch:
-  #       condition: service_healthy
-
-  ###############################################################################
-  # 4) snowstorm – Laufender Terminologie-Server (REST API für SNOMED CT)
-  # ---------------------------------------------------------------------------
-  # Zweck:    • Stellt die SNOMED-API unter http://localhost:8080 bereit.
-  #           • Liest die bereits importierten Daten aus Elasticsearch.
-  #           • Dient als Backend für den SNOMED-Browser und deine Python-Clients.
-  ###############################################################################
   snowstorm:
     # Das offizielle Snowstorm-Docker-Image (enthält die Java-App)
     image: snomedinternational/snowstorm:latest
@@ -194,9 +92,8 @@ services:
     # -------------------------------------------------------------------------
 
     # → Hier das ZIP aus dem Codespace mounten:
-    volumes:
-    # Eine Ebene nach oben ins Projektverzeichnis, dann in snomedct_releases:
-    - ../snomedct_releases/SnomedCT_Germany-EditionRelease_PRODUCTION_20250515T120000Z.zip:/data/SnomedCT.zip:ro
+    # volumes:
+    # - ./snomedct_releases/SnomedCT_Germany-EditionRelease_PRODUCTION_20250515T120000Z.zip:/data/SnomedCT.zip:ro
       
     entrypoint: >
       java -Xms2g -Xmx4g
@@ -205,8 +102,6 @@ services:
       -cp @/app/jib-classpath-file
       org.snomed.snowstorm.SnowstormApplication
       --elasticsearch.urls=http://elasticsearch:9200
-      --delete-indices
-      --import=/data/SnomedCT.zip
 
     # -------------------------------------------------------------------------
     # depends_on: Wartet, bis Elasticsearch „healthy“ ist
@@ -249,13 +144,6 @@ services:
     depends_on:
       snowstorm:
         condition: service_healthy
-
-  es-logmarker:
-    image: busybox
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    entrypoint: sh -c 'echo "✅ Elasticsearch ist bereit (Healthcheck erfolgreich)"'
 
 ###############################################################################
 # Benannte Docker-Volumes
