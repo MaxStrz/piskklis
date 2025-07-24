@@ -40,6 +40,7 @@ services:
       snowstorm:                  # startet erst, wenn API gesund
         condition: service_healthy
 
+
   ###########################################################################
   # 2) elasticsearch – Single-Node Cluster (DEV-Modus)
   # ------------------------------------------------------------------------
@@ -102,6 +103,7 @@ services:
       -cp @/app/jib-classpath-file
       org.snomed.snowstorm.SnowstormApplication
       --elasticsearch.urls=http://elasticsearch:9200
+      --server.address=0.0.0.0
 
     # -------------------------------------------------------------------------
     # depends_on: Wartet, bis Elasticsearch „healthy“ ist
@@ -145,6 +147,7 @@ services:
       snowstorm:
         condition: service_healthy
 
+      
 ###############################################################################
 # Benannte Docker-Volumes
 # ---------------------------------------------------------------------------

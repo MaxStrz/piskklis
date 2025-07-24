@@ -23,3 +23,5 @@ curl -g "http://snowstorm:8080/codesystems"
 ls -lh ./snomedct_releases
 curl -s "http://elasticsearch:9200/_cat/indices?v"
 curl -X DELETE "http://elasticsearch:9200/refset"
+chmod +x import-snomed.sh
+./import-snomed.sh
