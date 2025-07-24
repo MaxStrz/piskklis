@@ -34,7 +34,7 @@ services:
       context: .                 # Projekt-Root als Build-Kontext
       dockerfile: Dockerfile     # definiert Python, Jupyter, Git …
     volumes:
-      - notebooks:/workspace/notebooks   # Persistente .ipynb-Dateien
+      - notebooks:/workspaces/notebooks   # Persistente .ipynb-Dateien
     command: sleep infinity       # hält den Container im Leerlauf
     depends_on:
       snowstorm:                  # startet erst, wenn API gesund
