@@ -8,8 +8,6 @@
 
   "service": "devcontainer",
 
-  "workspaceFolder": "/workspace",
-
   "forwardPorts": [8888, 8080, 9200, 80],
 
   "postCreateCommand": "git config --global --add safe.directory /workspaces/piskklis && pip install -r /workspaces/piskklis/requirements.txt && echo '# Ready to go! ✅'",
