@@ -17,8 +17,7 @@ echo "⏳ Suche alle SNOMED-Indizes …"
 
 # 1. Hole eine Liste aller Indizes aus Elasticsearch (nur Index-Namen)
 #    _cat/indices?h=index gibt nur die Index-Namen als Zeilen aus
-#    grep '^snomed-' filtert alle, die mit "snomed-" beginnen (d.h. SNOMED-Indices)
-indices=$(curl -s "${ES_URL}/_cat/indices?h=index" | grep '^snomed-') || true
+indices=$(curl -s "${ES_URL}/_cat/indices?h=index" | grep -v '^$') # alle Indizes, leere Zeilen raus
 
 # 2. Prüfe, ob überhaupt SNOMED-Indizes gefunden wurden
 if [[ -z "$indices" ]]; then
