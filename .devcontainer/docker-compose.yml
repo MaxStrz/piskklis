@@ -113,8 +113,6 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-      # snomed-import:
-      #   condition: service_completed_successfully
 
     # Healthcheck für Snowstorm-Container:
     #   • Prüft regelmäßig, ob die REST-API unter /actuator/health erreichbar ist.
