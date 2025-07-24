@@ -1,9 +1,8 @@
 {
   "name": "piskklis",
-
-  "features": {"ghcr.io/devcontainers/features/docker-cli:1": {}},
-
-  "mounts": ["source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"],
+  
+  // Docker-CLI inside Codespace, spricht mit dem Host-Daemon
+  "features": {"ghcr.io/devcontainers/features/docker-outside-of-docker:1":{}},
 
   "dockerComposeFile": "docker-compose.yml",
 
