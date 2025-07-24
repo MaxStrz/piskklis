@@ -25,3 +25,7 @@ curl -s "http://elasticsearch:9200/_cat/indices?v"
 curl -X DELETE "http://elasticsearch:9200/refset"
 chmod +x import-snomed.sh
 ./import-snomed.sh
+docker exec -it piskklis_devcontainer-elasticsearch-1 bash
+cd /usr/share/elasticsearch/data
+ls -lh
+docker exec -it <container-name> bash -c "ls -lh /usr/share/elasticsearch/data"
