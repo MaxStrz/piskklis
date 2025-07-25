@@ -28,4 +28,5 @@ chmod +x import-snomed.sh
 docker exec -it piskklis_devcontainer-elasticsearch-1 bash
 cd /usr/share/elasticsearch/data
 ls -lh
+ls -la
 docker exec -it <container-name> bash -c "ls -lh /usr/share/elasticsearch/data"
