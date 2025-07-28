@@ -30,3 +30,8 @@ cd /usr/share/elasticsearch/data
 ls -lh
 ls -la
 docker exec -it <container-name> bash -c "ls -lh /usr/share/elasticsearch/data"
+docker ps -a
+docker volume ls
+curl 'http://snowstorm:8080/fhir/CodeSystem'
+curl --location -g 'http://snowstorm:8080/fhir/CodeSystem?_count=10'
+
