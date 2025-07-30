@@ -34,4 +34,8 @@ docker ps -a
 docker volume ls
 curl 'http://snowstorm:8080/fhir/CodeSystem'
 curl --location -g 'http://snowstorm:8080/fhir/CodeSystem?_count=10'
-
+netstat -tulpn | grep :80
+ss -ltnp
+curl -v http://localhost:80
+curl -v http://127.0.0.1:80
+curl -v http://0.0.0.0:80
