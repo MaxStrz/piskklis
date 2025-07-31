@@ -37,7 +37,6 @@ class Piskklis_SnomedAPI:
         try:
             resp = requests.get(url, params=params, timeout=30)
             resp.raise_for_status()
-            print(resp.json())
             if resp.json().get('expansion').get('total') > 0:
                 concepts = resp.json()['expansion']['contains']
             else:
