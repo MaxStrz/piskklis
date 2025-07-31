@@ -39,3 +39,5 @@ ss -ltnp
 curl -v http://localhost:80
 curl -v http://127.0.0.1:80
 curl -v http://0.0.0.0:80
+curl 'http://snowstorm:8080/MAIN/concepts?term=cardiac&limit=10'
+curl 'http://snowstorm:8080/MAIN/concepts?term=kolek&limit=10'

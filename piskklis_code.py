@@ -2,6 +2,12 @@ import requests
 from typing import List, Dict, Optional
 from urllib.parse import quote
 
+# Definiere eine eigene Exception-Klasse für diesen Fall
+class NoConceptsFoundError(Exception):
+    """Wird ausgelöst, wenn keine Konzepte gefunden wurden."""
+    pass
+
+
 class Piskklis_SnomedAPI:
     def __init__(self, base_url: str = "http://snowstorm:8080/fhir"):
         """
@@ -10,6 +16,44 @@ class Piskklis_SnomedAPI:
         """
         self.base_url = base_url.rstrip('/')
 
+    # 'https://browser.ihtsdotools.org/fhir
+    # /ValueSet/$expand?url=http%3A%2F%2Fsnomed.info%2Fsct%3Ffhir_vs&count=10&offset=1&filter=myocardial'
+
+    def get_concepts(self, name: str) -> Optional[List[Dict]]:
+        """
+        Sucht SNOMED CT Konzepte nach einem Namen und gibt eine Liste von Konzepten zurück.
+
+        :param name: Name oder Teilname des gesuchten Konzepts (als String)
+        :return: Liste von Dictionaries mit 'code' und 'display' der gefundenen Konzepte, oder None bei Fehler
+        """
+
+        # 'http://snowstorm:8080/fhir/ValueSet/$expand?url=http://snomed.info/sct?fhir_vs&count=10&filter=cardiac'
+        url = f"{self.base_url}/ValueSet/$expand"
+        params = {
+            "url": "http://snomed.info/sct?fhir_vs",
+            "count": 10,
+            "filter": name
+        }
+        try:
+            resp = requests.get(url, params=params, timeout=10)
+            resp.raise_for_status()
+            print(resp.json())
+            if resp.json().get('expansion').get('total') > 0:
+                concepts = resp.json()['expansion']['contains']
+            else:
+                # Wenn keine Konzepte gefunden wurden, eine eigene Exception werfen
+                raise NoConceptsFoundError(f"Keine Konzepte für '{name}' gefunden.")
+            
+            return concepts
+        
+        except NoConceptsFoundError as e:
+            print(f"[Fehler] {e}")
+            return None
+
+        except(requests.RequestException, KeyError) as e:
+            print(f"[Fehler] get_concepts({name}): {e}")
+            return None
+        
     def get_parents(self, smct_code: str) -> Optional[List[Dict]]:
         """
         Gibt die Elternkonzepte eines SNOMED CT Codes als Liste zurück.
