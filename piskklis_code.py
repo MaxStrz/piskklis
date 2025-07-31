@@ -35,7 +35,7 @@ class Piskklis_SnomedAPI:
             "filter": name
         }
         try:
-            resp = requests.get(url, params=params, timeout=10)
+            resp = requests.get(url, params=params, timeout=30)
             resp.raise_for_status()
             print(resp.json())
             if resp.json().get('expansion').get('total') > 0:
