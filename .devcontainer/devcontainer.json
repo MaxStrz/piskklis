@@ -10,7 +10,7 @@
 
   "workspaceFolder": "/workspaces/piskklis",
 
-  "forwardPorts": [8888, 8080, 9200, 80],
+  "forwardPorts": [8888, 8080, 9200, 80], // Kommentare
 
   "postCreateCommand": "git config --global --add safe.directory /workspaces/piskklis && pip install -r /workspaces/piskklis/requirements.txt && echo '# Ready to go! ✅'",
 
