@@ -9,20 +9,23 @@ set -euo pipefail
 SNOWSTORM_URL="http://snowstorm:8080"
 
 # Branch, in den importiert werden soll
-BRANCH="MAIN"
+#BRANCH="MAIN"
+BRANCH="MAIN/GPFP-EXTENSION"
 
 # Pfad zum RF2-ZIP in Deinem Dev-Container
-ZIP_PATH="/workspaces/piskklis/snomedct_releases/SnomedCT_Germany_20250515T120000Z.zip"
+#ZIP_PATH="/workspaces/piskklis/snomedct_releases/SnomedCT_Germany_20250515T120000Z.zip"
+ZIP_PATH="/workspaces/piskklis/snomedct_releases/SnomedCT_GPFP_PRODUCTION_20250331T120000Z.zip"
 
 ############################
 #    Import-Logik Schritt 1
 ############################
+
 echo "▶ Erstelle neuen Import-Job..."
 RESPONSE=$(curl -s -D - -o /dev/null -X POST "${SNOWSTORM_URL}/imports" \
   -H "Content-Type: application/json" \
   -d '{
     "branchPath": "'"${BRANCH}"'",
-    "createCodeSystemVersion": true,
+    "createCodeSystemVersion": false,
     "type": "SNAPSHOT"
   }')
 
