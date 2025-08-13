@@ -25,11 +25,11 @@ curl -s "http://elasticsearch:9200/_cat/indices?v"
 curl -X DELETE "http://elasticsearch:9200/refset"
 chmod +x import-snomed.sh
 ./import-snomed.sh
-docker exec -it piskklis_devcontainer-elasticsearch-1 bash
 cd /usr/share/elasticsearch/data
 ls -lh
 ls -la
 docker exec -it <container-name> bash -c "ls -lh /usr/share/elasticsearch/data"
+docker exec -it piskklis_devcontainer-elasticsearch-1 bash
 docker ps -a
 docker volume ls
 curl 'http://snowstorm:8080/fhir/CodeSystem'
@@ -41,3 +41,35 @@ curl -v http://127.0.0.1:80
 curl -v http://0.0.0.0:80
 curl 'http://snowstorm:8080/MAIN/concepts?term=cardiac&limit=10'
 curl 'http://snowstorm:8080/MAIN/concepts?term=kolek&limit=10'
+git push -f origin main
+git reset --hard fe66481
+
+DRIVER    VOLUME NAME
+local     50a27b609f4f236caadf2c9feef882e152daa50f25ef79772e0726300274032a
+local     piskklis_devcontainer_elastic
+
+
+elasticsearch@ba2301c9ca98:~$ cd /usr/share/elasticsearch/data
+elasticsearch@ba2301c9ca98:~/data$ ls -lh
+total 16K
+drwxrwxr-x  2 elasticsearch root 4.0K Aug 13 06:13 _state
+drwxrwxr-x 30 elasticsearch root 4.0K Aug 12 12:08 indices
+-rw-rw-r--  1 elasticsearch root    0 Aug 12 12:08 node.lock
+-rw-rw-r--  1 elasticsearch root  115 Aug 12 12:08 nodes
+drwxrwxr-x  2 elasticsearch root 4.0K Aug 13 06:13 snapshot_cache
+elasticsearch@ba2301c9ca98:~/data$ ls -la
+total 28
+drwxrwxr-x  5 elasticsearch root 4096 Aug 13 06:21 .
+drwxrwxr-x  1 root          root 4096 Aug 12 12:07 ..
+drwxrwxr-x  2 elasticsearch root 4096 Aug 13 06:13 _state
+drwxrwxr-x 30 elasticsearch root 4096 Aug 12 12:08 indices
+-rw-rw-r--  1 elasticsearch root    0 Aug 12 12:08 node.lock
+-rw-rw-r--  1 elasticsearch root  115 Aug 12 12:08 nodes
+drwxrwxr-x  2 elasticsearch root 4096 Aug 13 06:13 snapshot_cache
+
+elasticsearch@ba2301c9ca98:~$ du -sh data
+2.7G    data
+
+root@ae54dfabee4b:/workspaces/piskklis# docker inspect piskklis_devcontainer-elasticsearch-1 --format '{{range .Mounts}}{{if eq .Destination "/usr/share/elasticsearch/data"}}{{.Source}}{{end}}{{end}
+}'
+/var/lib/docker/volumes/piskklis_devcontainer_elastic/_data
