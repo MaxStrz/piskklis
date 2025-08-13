@@ -35,7 +35,7 @@ class Piskklis_SnomedAPI:
             "filter": name
         }
         try:
-            resp = requests.get(url, params=params, timeout=10)
+            resp = requests.get(url, params=params, timeout=30)
             resp.raise_for_status()
             print(resp.json())
             if resp.json().get('expansion').get('total') > 0:
@@ -73,7 +73,7 @@ class Piskklis_SnomedAPI:
         }
         try:
             # GET-Request an die API senden (Timeout für Robustheit)
-            resp = requests.get(url, params=params, timeout=10)
+            resp = requests.get(url, params=params, timeout=30)
             # Bei Fehler HTTP-Exception werfen
             resp.raise_for_status()
             # Antwort als JSON interpretieren
@@ -99,7 +99,7 @@ class Piskklis_SnomedAPI:
         }
         try:
             # Anfrage an die API senden (Timeout wie oben)
-            resp = requests.get(url, params=params, timeout=10)
+            resp = requests.get(url, params=params, timeout=30)
             resp.raise_for_status()
             data = resp.json()
             # Im "parameter"-Array nach einem Eintrag mit Name 'display' suchen
