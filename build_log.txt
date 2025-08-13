@@ -73,3 +73,12 @@ elasticsearch@ba2301c9ca98:~$ du -sh data
 root@ae54dfabee4b:/workspaces/piskklis# docker inspect piskklis_devcontainer-elasticsearch-1 --format '{{range .Mounts}}{{if eq .Destination "/usr/share/elasticsearch/data"}}{{.Source}}{{end}}{{end}
 }'
 /var/lib/docker/volumes/piskklis_devcontainer_elastic/_data
+
+curl -s "http://snowstorm:8080/branches"
+
+# Falls Debian/Ubuntu-Base (sehr wahrscheinlich im Codespace):
+apt-get update
+apt-get install -y jq
+
+curl -s "http://snowstorm:8080/browser/MAIN/concepts?limit=0" | jq .total
+curl -s "http://snowstorm:8080/browser/MAIN/GPFP-EXTENSION/concepts?limit=0" | jq .total
