@@ -2,12 +2,12 @@
   "name": "piskklis",
   
   // Docker-CLI inside Codespace, spricht mit dem Host-Daemon
-  "features": {"ghcr.io/devcontainers/features/docker-outside-of-docker:1":{}},
+  //"features": {"ghcr.io/devcontainers/features/docker-outside-of-docker:1":{}},
 
   "dockerComposeFile": "docker-compose.yml",
 
   "service": "devcontainer",
-
+  
   "workspaceFolder": "/workspaces/piskklis",
 
   "forwardPorts": [8888, 8080, 9200, 80],
@@ -28,3 +28,5 @@
     }
   }
 }
+
+// https://containers.dev/implementors/json_reference/?utm_source=chatgpt.com#compose-specific

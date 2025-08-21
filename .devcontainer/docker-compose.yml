@@ -30,10 +30,13 @@ services:
   #   gegen die API testen können.
   ###########################################################################
   devcontainer:
+    volumes:
+      - ../:/workspaces/piskklis
     build:
       context: .                 # Projekt-Root als Build-Kontext
       dockerfile: Dockerfile     # definiert Python, Jupyter, Git …
     command: sleep infinity       # hält den Container im Leerlauf
+
     depends_on:
       snowstorm:                  # startet erst, wenn API gesund
         condition: service_healthy
