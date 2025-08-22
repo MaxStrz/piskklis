@@ -9,7 +9,7 @@ set -euo pipefail
 SNOWSTORM_URL="http://snowstorm:8080"
 
 # Branch, in den importiert werden soll
-BRANCH="MAIN/GPFP-EXTENSION"
+BRANCH="MAIN/GPFP-EXTENSION2"
 
 # Pfad zum RF2-ZIP in Deinem Dev-Container
 ZIP_PATH="/workspaces/piskklis/snomedct_releases/SnomedCT_GPFP_PRODUCTION_20250331T120000Z.zip"
