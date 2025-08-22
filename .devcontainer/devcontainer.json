@@ -10,7 +10,9 @@
   
   "workspaceFolder": "/workspaces/piskklis",
 
-  "forwardPorts": [8888, 8080, 9200, 80],
+  // "forwardPorts": [80],
+  
+  // "portsAttributes": {"80": {"label": "snomed browser"}},
 
   "postCreateCommand": "git config --global --add safe.directory /workspaces/piskklis && pip install -r /workspaces/piskklis/requirements.txt && echo '# Ready to go! ✅'",
 
@@ -30,3 +32,4 @@
 }
 
 // https://containers.dev/implementors/json_reference/?utm_source=chatgpt.com#compose-specific
+// https://www.heissenberger.at/en/blog/devcontainer-forward-ports-composer/
