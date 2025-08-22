@@ -10,10 +10,6 @@
   
   "workspaceFolder": "/workspaces/piskklis",
 
-  // "forwardPorts": [80],
-  
-  // "portsAttributes": {"80": {"label": "snomed browser"}},
-
   "postCreateCommand": "git config --global --add safe.directory /workspaces/piskklis && pip install -r /workspaces/piskklis/requirements.txt && echo '# Ready to go! ✅'",
 
   "customizations": {
