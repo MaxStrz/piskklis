@@ -19,6 +19,7 @@
 #   RF2-ZIPs liegen **außerhalb** von Docker im Host-Ordner
 #   „./snomedct_releases“ (siehe snomed-import → bind-mount).
 ###############################################################################
+version: '2.1'
 
 services:
   ###########################################################################
@@ -41,85 +42,46 @@ services:
       snowstorm:                  # startet erst, wenn API gesund
         condition: service_healthy
 
-
-  ###########################################################################
-  # 2) elasticsearch – Single-Node Cluster (DEV-Modus)
-  # ------------------------------------------------------------------------
-  # • 4 GB Java-Heap – stelle sicher, dass der Codespace/VM > 6 GB RAM hat.
-  # • Daten werden im Volume „elastic“ gespeichert → bleiben auch nach
-  #   Container-Rebuild erhalten.
-  ###########################################################################
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: elasticsearch
     environment:
-      - discovery.type=single-node         # Single-Node-Modus, kein Cluster-Bootstrap nötig
-      - xpack.security.enabled=false       # Sicherheit deaktiviert (nur für Entwicklung!)
-      - "ES_JAVA_OPTS=-Xms4g -Xmx4g"       # Fester Java-Heap, hier 4 GB
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - node.name=snowstorm
+      - cluster.name=snowstorm-cluster
+      - "ES_JAVA_OPTS=-Xms4g -Xmx4g"
     volumes:
-      - elastic:/usr/share/elasticsearch/data  # Persistente Speicherung der ES-Daten
-
+      - elastic:/usr/share/elasticsearch/data
+    networks:
+      elastic:
+        aliases:
+        - es
     healthcheck:
-      # Healthcheck prüft regelmäßig, ob Elasticsearch voll funktionsfähig ist.
-      # Das ist wichtig, damit nachfolgende Container (wie z.B. Importer oder Snowstorm)
-      # nicht zu früh starten und auf einen noch nicht einsatzbereiten Cluster zugreifen.
-      #
-      # test: 
-      #   - 'curl' schickt eine HTTP-Anfrage an Elasticsearch auf Port 9200.
-      #   - '-f' sorgt dafür, dass curl einen Fehlercode zurückgibt, falls die Antwort kein 2xx-Status ist.
-      #   - Der Endpunkt '/_cluster/health?wait_for_status=green' prüft, ob der Cluster den Status 'green' erreicht hat.
-      #     Mit 'wait_for_status=green' wartet Elasticsearch kurz, ob der Status noch wechselt.
-      #   - '|| exit 1' bedeutet: Falls curl fehlschlägt (also Status ≠ green oder Fehler), wird mit Fehlercode 1 abgebrochen.
-      #   - Docker Compose markiert den Service dann als 'unhealthy' und startet abhängige Container noch nicht.
-      test: |
-        sh -c '
-          echo "🔍 Prüfe Elasticsearch-Status…";
-          curl -f http://localhost:9200/_cluster/health?wait_for_status=green || exit 1
-        '
-      interval: 30s    # Alle 30 Sekunden wird der Healthcheck erneut versucht.
-      timeout: 10s     # Nach 10 Sekunden bricht jeder einzelne Versuch ab.
-      retries: 120      # Es werden maximal 120 Versuche gemacht (also bis zu 60 Minuten).
+      test: ["CMD", "curl", "-f", "http://es:9200"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+    ports:
+      - 127.0.0.1:9200:9200
+    mem_reservation: 4g
+
 
   snowstorm:
-    # Das offizielle Snowstorm-Docker-Image (enthält die Java-App)
     image: snomedinternational/snowstorm:latest
-
-    # -------------------------------------------------------------------------
-    # ENTRYPOINT: Startet die Anwendung exakt so wie im offiziellen Compose-File.
-    # -Xms2g -Xmx4g                  → 2–4 GB Heap für Java (je nach VM-Größe)
-    # --add-opens ...                → notwendige Java-Module für Snowstorm
-    # -cp @/app/jib-classpath-file   → Klassenpfad (so funktioniert das Image, kein JAR!)
-    # org.snomed.snowstorm.SnowstormApplication
-    #                                → Hauptklasse, die Snowstorm startet
-    # --elasticsearch.urls=...       → Adresse des Elasticsearch-Service (per Compose vernetzt)
-    # -------------------------------------------------------------------------
-
-    # → Hier das ZIP aus dem Codespace mounten:
-    # volumes:
-    # - ./snomedct_releases/SnomedCT_Germany-EditionRelease_PRODUCTION_20250515T120000Z.zip:/data/SnomedCT.zip:ro
-      
-    entrypoint: >
-      java -Xms2g -Xmx4g
-      --add-opens java.base/java.lang=ALL-UNNAMED
-      --add-opens java.base/java.util=ALL-UNNAMED
-      -cp @/app/jib-classpath-file
-      org.snomed.snowstorm.SnowstormApplication
-      --elasticsearch.urls=http://elasticsearch:9200
-      --server.address=0.0.0.0
-
-    # -------------------------------------------------------------------------
-    # depends_on: Wartet, bis Elasticsearch „healthy“ ist
-    # (d. h. HTTP auf Port 9200 antwortet), bevor Snowstorm startet.
-    # So werden Verbindungsfehler beim Initialisieren verhindert.
-    # -------------------------------------------------------------------------
+    container_name: snowstorm
+    restart: always
     depends_on:
       elasticsearch:
         condition: service_healthy
+    entrypoint: java -Xms2g -Xmx4g --add-opens java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED -cp @/app/jib-classpath-file org.snomed.snowstorm.SnowstormApplication --elasticsearch.urls=http://es:9200
+    networks:
+      elastic:
+        aliases:
+        - snowstorm
+    ports:
+      - 8080:8080
 
-    # Healthcheck für Snowstorm-Container:
-    #   • Prüft regelmäßig, ob die REST-API unter /actuator/health erreichbar ist.
-    #   • Erst wenn dieser Test erfolgreich ist, gilt der Container als „healthy“.
-    #   • Docker Compose kann so Abhängigkeiten zuverlässig steuern (z.B. browser).
-    # -------------------------------------------------------------------------
     healthcheck:
       # Befehl, der ausgeführt wird: „curl -f“ (fail if HTTP error)
       #   → schlägt fehl, falls HTTP-Status nicht 200.
@@ -135,22 +97,24 @@ services:
       retries: 24
       # (In diesem Beispiel: 24 × 5 s = 2 Minuten maximale Wartezeit)
 
-  ###########################################################################
-  # 5) browser – Schlanke Web-UI (Port 80) zum Durchstöbern von SNOMED CT
-  ###########################################################################
   browser:
     image: snomedinternational/snomedct-browser:latest
-    environment:
-      - API_HOST=http://snowstorm:8080/    # zeigt auf REST-API
+    container_name: browser
     depends_on:
-      snowstorm:
-        condition: service_healthy
+      - snowstorm
+    links:
+      - snowstorm:snowstorm
+    networks:
+      - elastic
+    environment:
+      - API_HOST=http://snowstorm:8080/
+    ports:
+      - 80:80
+    restart: always
 
-      
-###############################################################################
-# Benannte Docker-Volumes
-# ---------------------------------------------------------------------------
-# • elastic   → persistente Elasticsearch-Indizes
-###############################################################################
+
+networks:
+  elastic:
+
 volumes:
   elastic:
