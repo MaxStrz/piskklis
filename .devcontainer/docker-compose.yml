@@ -57,13 +57,13 @@ services:
       elastic:
         aliases:
         - es
+    ports:
+      - 127.0.0.1:9200:9200
     healthcheck:
       test: ["CMD", "curl", "-f", "http://es:9200"]
       interval: 10s
       timeout: 10s
       retries: 60
-    ports:
-      - 127.0.0.1:9200:9200
     mem_reservation: 4g
 
 
