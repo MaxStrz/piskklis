@@ -1,6 +1,6 @@
 # ------------------- Konfiguration -------------------
 SNOWSTORM_URL="http://snowstorm:8080"
-BRANCH_NAME="GPFP-Extension"         # Nur der Name des neuen Branches
+BRANCH_NAME="GPFP-EXTENSION2"         # Nur der Name des neuen Branches
 PARENT_BRANCH="MAIN"                 # Von welchem Branch soll abgezweigt werden?
 BRANCH_PATH="MAIN/${BRANCH_NAME}"    # Volle Branch-Pfad-Angabe
 
